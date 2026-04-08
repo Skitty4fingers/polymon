@@ -1,0 +1,106 @@
+@page "/admin/settings"
+@rendermode InteractiveServer
+@inject ISysSettingsRepository SettingsRepo
+@inject ISnackbar Snackbar
+
+<PageTitle>Settings - PolyMon</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-4">System Settings</MudText>
+
+@if (_settings is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudPaper Class="pa-4" Elevation="1">
+        <MudForm @ref="_form" @bind-IsValid="_isValid">
+            <MudText Typo="Typo.subtitle1" Class="mb-3">General</MudText>
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string" Label="System Name" @bind-Value="_settings.Name" Required="true" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudNumericField T="int" Label="Poll Interval (seconds)" @bind-Value="_settings.MainTimerInterval" Min="10" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudCheckBox T="bool" Label="Monitoring Enabled" @bind-Value="_settings.IsEnabled" />
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Email / SMTP</MudText>
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string" Label="From Name" @bind-Value="_settings.SmtpFromName" Required="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string" Label="From Address" @bind-Value="_settings.SmtpFromAddress" Required="true" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudCheckBox T="bool" Label="Use Internal SMTP (localhost:25)" @bind-Value="_settings.UseInternalSmtp" />
+                </MudItem>
+                @if (!_settings.UseInternalSmtp)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string" Label="SMTP Server" @bind-Value="_settings.ExtSmtpServer" />
+                    </MudItem>
+                    <MudItem xs="12" sm="2">
+                        <MudNumericField T="int?" Label="Port" @bind-Value="_settings.ExtSmtpPort" />
+                    </MudItem>
+                    <MudItem xs="12" sm="2">
+                        <MudCheckBox T="bool" Label="Use SSL" @bind-Value="_settings.ExtSmtpUseSsl" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField T="string" Label="Username (optional)" @bind-Value="_settings.ExtSmtpUserId" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField T="string" Label="Password" @bind-Value="_settings.ExtSmtpPwd"
+                                      InputType="InputType.Password" />
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Data Retention (months)</MudText>
+            <MudGrid>
+                <MudItem xs="6" sm="3">
+                    <MudNumericField T="short" Label="Raw events" @bind-Value="_settings.RetentionMaxMonthsRaw" Min="1" />
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudNumericField T="short" Label="Daily rollups" @bind-Value="_settings.RetentionMaxMonthsDaily" Min="1" />
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudNumericField T="short" Label="Weekly rollups" @bind-Value="_settings.RetentionMaxMonthsWeekly" Min="1" />
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudNumericField T="short" Label="Monthly rollups" @bind-Value="_settings.RetentionMaxMonthsMonthly" Min="1" />
+                </MudItem>
+            </MudGrid>
+
+            <MudStack Row="true" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync"
+                           Disabled="!_isValid">Save</MudButton>
+            </MudStack>
+        </MudForm>
+    </MudPaper>
+}
+
+@code {
+    private SysSettings? _settings;
+    private MudForm _form = null!;
+    private bool _isValid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _settings = await SettingsRepo.GetAsync() ?? new SysSettings();
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_isValid || _settings is null) return;
+        await SettingsRepo.SaveAsync(_settings);
+        Snackbar.Add("Settings saved.", Severity.Success);
+    }
+}

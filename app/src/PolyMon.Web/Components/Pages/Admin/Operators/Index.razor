@@ -1,0 +1,65 @@
+@page "/admin/operators"
+@rendermode InteractiveServer
+@inject IOperatorRepository OperatorRepo
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>Operators - PolyMon</PageTitle>
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h5">Operators</MudText>
+    <MudSpacer />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.PersonAdd"
+               OnClick="@(() => Nav.NavigateTo("/admin/operators/new"))">Add Operator</MudButton>
+</MudStack>
+
+<MudDataGrid T="Operator" Items="@_operators" Dense="true" Hover="true">
+    <Columns>
+        <PropertyColumn Property="o => o.Name" Title="Name" />
+        <PropertyColumn Property="o => o.EmailAddress" Title="Email" />
+        <TemplateColumn Title="Enabled">
+            <CellTemplate>
+                <MudSwitch T="bool" Value="@context.Item.IsEnabled"
+                           ValueChanged="@((v) => ToggleAsync(context.Item, v))"
+                           Color="Color.Success" />
+            </CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="Notifications">
+            <CellTemplate>
+                @(context.Item.QueuedNotify switch { 0 => "None", 1 => "Fail only", 2 => "Warn+Fail", _ => "?" })
+                @if (context.Item.SummaryNotify) { <MudChip T="string" Size="Size.Small">Daily Summary</MudChip> }
+            </CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn>
+            <CellTemplate>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                               OnClick="@(() => Nav.NavigateTo($"/admin/operators/{context.Item.OperatorId}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                               OnClick="@(() => DeleteAsync(context.Item))" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</MudDataGrid>
+
+@code {
+    private List<Operator> _operators = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _operators = await OperatorRepo.GetAllAsync();
+    }
+
+    private async Task ToggleAsync(Operator op, bool enabled)
+    {
+        op.IsEnabled = enabled;
+        await OperatorRepo.UpdateAsync(op);
+    }
+
+    private async Task DeleteAsync(Operator op)
+    {
+        await OperatorRepo.DeleteAsync(op.OperatorId);
+        _operators.Remove(op);
+        Snackbar.Add($"{op.Name} deleted.", Severity.Warning);
+    }
+}

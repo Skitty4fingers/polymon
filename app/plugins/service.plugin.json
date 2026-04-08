@@ -1,0 +1,10 @@
+{
+  "TypeKey": "SERVICE",
+  "DisplayName": "Windows Service Monitor",
+  "Description": "Checks if a Windows service is running",
+  "Parameters": [
+    { "Name": "ServiceName", "Type": "string", "Default": "", "Required": true, "Description": "Service name (short name, not display name)" },
+    { "Name": "ComputerName", "Type": "string", "Default": "localhost", "Required": false, "Description": "Target computer" },
+    { "Name": "AlertOnStopped", "Type": "bool", "Default": "true", "Required": false, "Description": "Alert if service is stopped" }
+  ]
+}

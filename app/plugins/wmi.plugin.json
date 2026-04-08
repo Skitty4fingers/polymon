@@ -1,0 +1,12 @@
+{
+  "TypeKey": "WMI",
+  "DisplayName": "WMI Monitor",
+  "Description": "Executes a WMI/CIM query and evaluates the result",
+  "Parameters": [
+    { "Name": "ComputerName", "Type": "string", "Default": "localhost", "Required": false, "Description": "Target computer" },
+    { "Name": "Namespace", "Type": "string", "Default": "root/cimv2", "Required": false, "Description": "WMI namespace" },
+    { "Name": "Query", "Type": "string", "Default": "", "Required": true, "Description": "WQL query (e.g. SELECT * FROM Win32_Service WHERE Name='W3SVC')" },
+    { "Name": "PropertyName", "Type": "string", "Default": "", "Required": false, "Description": "Property to read from result for counter value" },
+    { "Name": "ExpectedValue", "Type": "string", "Default": "", "Required": false, "Description": "Expected value of property (empty = just check row exists)" }
+  ]
+}

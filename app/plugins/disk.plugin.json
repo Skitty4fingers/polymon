@@ -1,0 +1,11 @@
+{
+  "TypeKey": "DISK",
+  "DisplayName": "Disk Monitor",
+  "Description": "Monitors disk free space percentage",
+  "Parameters": [
+    { "Name": "ComputerName", "Type": "string", "Default": "localhost", "Required": false, "Description": "Target computer" },
+    { "Name": "DriveLetter", "Type": "string", "Default": "C", "Required": true, "Description": "Drive letter (e.g. C)" },
+    { "Name": "WarnFreePercent", "Type": "decimal", "Default": 20, "Required": false, "Description": "Warning when free space below this %" },
+    { "Name": "FailFreePercent", "Type": "decimal", "Default": 10, "Required": false, "Description": "Failure when free space below this %" }
+  ]
+}

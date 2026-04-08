@@ -1,0 +1,13 @@
+{
+  "TypeKey": "SNMP",
+  "DisplayName": "SNMP Monitor",
+  "Description": "Queries an SNMP OID on a network device",
+  "Parameters": [
+    { "Name": "HostName", "Type": "string", "Default": "", "Required": true, "Description": "SNMP device hostname or IP" },
+    { "Name": "Community", "Type": "string", "Default": "public", "Required": false, "Description": "SNMP v2c community string" },
+    { "Name": "OID", "Type": "string", "Default": "1.3.6.1.2.1.1.1.0", "Required": true, "Description": "OID to query (e.g. 1.3.6.1.2.1.1.1.0 = sysDescr)" },
+    { "Name": "Port", "Type": "int", "Default": 161, "Required": false, "Description": "SNMP UDP port" },
+    { "Name": "WarnThreshold", "Type": "decimal", "Default": 0, "Required": false, "Description": "Warning threshold for numeric OIDs (0=disabled)" },
+    { "Name": "FailThreshold", "Type": "decimal", "Default": 0, "Required": false, "Description": "Failure threshold for numeric OIDs (0=disabled)" }
+  ]
+}

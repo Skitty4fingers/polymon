@@ -1,0 +1,12 @@
+{
+  "TypeKey": "SQL",
+  "DisplayName": "SQL Monitor",
+  "Description": "Executes a SQL query and evaluates the scalar result",
+  "Parameters": [
+    { "Name": "ConnectionString", "Type": "string", "Default": "", "Required": true, "Description": "SQL Server connection string" },
+    { "Name": "Query", "Type": "string", "Default": "", "Required": true, "Description": "SQL query returning a single scalar value" },
+    { "Name": "WarnThreshold", "Type": "decimal", "Default": 0, "Required": false, "Description": "Warning if result exceeds (0=disabled)" },
+    { "Name": "FailThreshold", "Type": "decimal", "Default": 0, "Required": false, "Description": "Failure if result exceeds (0=disabled)" },
+    { "Name": "TimeoutSeconds", "Type": "int", "Default": 30, "Required": false, "Description": "Query timeout (seconds)" }
+  ]
+}

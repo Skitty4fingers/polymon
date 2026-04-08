@@ -1,0 +1,74 @@
+@page "/status"
+@rendermode InteractiveServer
+@inject IMonitorRepository MonitorRepo
+@inject IEventRepository EventRepo
+
+<PageTitle>Current Status - PolyMon</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-4">Current Status</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudDataGrid T="MonitorStatusRow" Items="@_rows" Dense="true" Hover="true"
+                 SortMode="SortMode.Multiple" Filterable="true">
+        <Columns>
+            <PropertyColumn Property="r => r.Monitor.Name" Title="Monitor" />
+            <PropertyColumn Property="r => r.Monitor.MonitorType!.Name" Title="Type" />
+            <TemplateColumn Title="Status">
+                <CellTemplate>
+                    <StatusBadge Status="@context.Item.Status" />
+                </CellTemplate>
+            </TemplateColumn>
+            <PropertyColumn Property="r => r.Message" Title="Message" />
+            <TemplateColumn Title="Last Check">
+                <CellTemplate>
+                    @(context.Item.EventDt?.ToLocalTime().ToString("g") ?? "Never")
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Enabled">
+                <CellTemplate>
+                    <MudIcon Icon="@(context.Item.Monitor.IsEnabled ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Cancel)"
+                             Color="@(context.Item.Monitor.IsEnabled ? Color.Success : Color.Error)"
+                             Size="Size.Small" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+}
+
+@code {
+    private record MonitorStatusRow(Monitor Monitor, MonitorStatus Status, string? Message, DateTime? EventDt);
+
+    private List<MonitorStatusRow> _rows = [];
+    private bool _loading = true;
+    private System.Threading.Timer? _refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _loading = false;
+        _refreshTimer = new System.Threading.Timer(_ => InvokeAsync(async () =>
+        {
+            await LoadAsync();
+            StateHasChanged();
+        }), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    private async Task LoadAsync()
+    {
+        var monitors = await MonitorRepo.GetAllAsync();
+        var rows = new List<MonitorStatusRow>();
+        foreach (var m in monitors)
+        {
+            var evt = await EventRepo.GetLastEventAsync(m.MonitorId);
+            rows.Add(new MonitorStatusRow(m, evt?.Status ?? MonitorStatus.Ok, evt?.Message, evt?.EventDt));
+        }
+        _rows = rows;
+    }
+
+    public void Dispose() => _refreshTimer?.Dispose();
+}

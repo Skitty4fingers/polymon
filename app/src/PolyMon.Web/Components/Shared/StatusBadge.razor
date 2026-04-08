@@ -1,0 +1,26 @@
+@* Displays a color-coded status chip for OK / Warning / Fail *@
+
+<MudChip T="string" Color="@GetColor()" Size="Size.Small" Variant="Variant.Filled" Class="@Class">
+    @GetLabel()
+</MudChip>
+
+@code {
+    [Parameter] public MonitorStatus Status { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private Color GetColor() => Status switch
+    {
+        MonitorStatus.Ok => Color.Success,
+        MonitorStatus.Warning => Color.Warning,
+        MonitorStatus.Fail => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetLabel() => Status switch
+    {
+        MonitorStatus.Ok => "OK",
+        MonitorStatus.Warning => "WARNING",
+        MonitorStatus.Fail => "FAIL",
+        _ => "UNKNOWN"
+    };
+}

@@ -1,0 +1,108 @@
+@page "/admin/operators/new"
+@page "/admin/operators/{Id:int}"
+@rendermode InteractiveServer
+@inject IOperatorRepository OperatorRepo
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>@(Id.HasValue ? "Edit Operator" : "New Operator") - PolyMon</PageTitle>
+<MudText Typo="Typo.h5" Class="mb-4">@(Id.HasValue ? "Edit Operator" : "New Operator")</MudText>
+
+<MudPaper Class="pa-4" Elevation="1">
+    <MudForm @ref="_form" @bind-IsValid="_isValid">
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudTextField T="string" Label="Name" @bind-Value="_operator.Name" Required="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField T="string" Label="Email Address" @bind-Value="_operator.EmailAddress"
+                              Required="true" InputType="InputType.Email" />
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudCheckBox T="bool" Label="Enabled" @bind-Value="_operator.IsEnabled" />
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudCheckBox T="bool" Label="Include message body" @bind-Value="_operator.IncludeMessageBody" />
+            </MudItem>
+        </MudGrid>
+
+        <MudDivider Class="my-4" />
+        <MudText Typo="Typo.subtitle1" Class="mb-2">Queued Notifications</MudText>
+        <MudSelect T="byte" Label="Notify when" @bind-Value="_operator.QueuedNotify">
+            <MudSelectItem T="byte" Value="0">None</MudSelectItem>
+            <MudSelectItem T="byte" Value="1">Failures only</MudSelectItem>
+            <MudSelectItem T="byte" Value="2">Warnings + Failures</MudSelectItem>
+        </MudSelect>
+
+        <MudDivider Class="my-4" />
+        <MudText Typo="Typo.subtitle1" Class="mb-2">Daily Summary</MudText>
+        <MudGrid>
+            <MudItem xs="12" sm="3">
+                <MudCheckBox T="bool" Label="Enable daily summary" @bind-Value="_operator.SummaryNotify" />
+            </MudItem>
+            @if (_operator.SummaryNotify)
+            {
+                <MudItem xs="6" sm="2">
+                    <MudCheckBox T="bool" Label="Include OK" @bind-Value="_operator.SummaryNotifyOk" />
+                </MudItem>
+                <MudItem xs="6" sm="2">
+                    <MudCheckBox T="bool" Label="Include Warnings" @bind-Value="_operator.SummaryNotifyWarn" />
+                </MudItem>
+                <MudItem xs="6" sm="2">
+                    <MudCheckBox T="bool" Label="Include Failures" @bind-Value="_operator.SummaryNotifyFail" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField T="string" Label="Send at (HH:mm)" @bind-Value="_operator.SummaryNotifyTime" />
+                </MudItem>
+            }
+        </MudGrid>
+
+        <MudDivider Class="my-4" />
+        <MudText Typo="Typo.subtitle1" Class="mb-2">Offline Time (suppress alerts)</MudText>
+        <MudGrid>
+            <MudItem xs="6" sm="3">
+                <MudTextField T="string" Label="Start (HH:mm)" @bind-Value="_operator.OfflineTimeStart" />
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudTextField T="string" Label="End (HH:mm)" @bind-Value="_operator.OfflineTimeEnd" />
+            </MudItem>
+        </MudGrid>
+
+        <MudStack Row="true" Class="mt-4" Spacing="2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync"
+                       Disabled="!_isValid">Save</MudButton>
+            <MudButton Variant="Variant.Outlined" OnClick="@(() => Nav.NavigateTo("/admin/operators"))">Cancel</MudButton>
+        </MudStack>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Operator _operator = new() { IsEnabled = true, IncludeMessageBody = true, QueuedNotify = 1 };
+    private MudForm _form = null!;
+    private bool _isValid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id.HasValue)
+        {
+            var existing = await OperatorRepo.GetByIdAsync(Id.Value);
+            if (existing is not null) _operator = existing;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_isValid) return;
+
+        if (Id.HasValue)
+            await OperatorRepo.UpdateAsync(_operator);
+        else
+            _operator = await OperatorRepo.AddAsync(_operator);
+
+        Snackbar.Add("Operator saved.", Severity.Success);
+        Nav.NavigateTo("/admin/operators");
+    }
+}

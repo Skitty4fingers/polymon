@@ -1,0 +1,70 @@
+@page "/admin/monitors"
+@rendermode InteractiveServer
+@inject IMonitorRepository MonitorRepo
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>Monitors - PolyMon</PageTitle>
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h5">Monitors</MudText>
+    <MudSpacer />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               OnClick="@(() => Nav.NavigateTo("/admin/monitors/new"))">Add Monitor</MudButton>
+</MudStack>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudDataGrid T="Monitor" Items="@_monitors" Dense="true" Hover="true">
+        <Columns>
+            <PropertyColumn Property="m => m.Name" Title="Name" />
+            <PropertyColumn Property="m => m.MonitorType!.Name" Title="Type" />
+            <TemplateColumn Title="Enabled">
+                <CellTemplate>
+                    <MudSwitch T="bool" Value="@context.Item.IsEnabled"
+                               ValueChanged="@((v) => ToggleEnabledAsync(context.Item, v))"
+                               Color="Color.Success" />
+                </CellTemplate>
+            </TemplateColumn>
+            <PropertyColumn Property="m => m.TriggerMod" Title="Trigger Mod" />
+            <TemplateColumn>
+                <CellTemplate>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                   OnClick="@(() => Nav.NavigateTo($"/admin/monitors/{context.Item.MonitorId}"))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                   OnClick="@(() => DeleteAsync(context.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+}
+
+@code {
+    private List<Monitor> _monitors = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _monitors = await MonitorRepo.GetAllAsync();
+        _loading = false;
+    }
+
+    private async Task ToggleEnabledAsync(Monitor monitor, bool enabled)
+    {
+        monitor.IsEnabled = enabled;
+        await MonitorRepo.UpdateAsync(monitor);
+        Snackbar.Add($"{monitor.Name} {(enabled ? "enabled" : "disabled")}.", Severity.Info);
+    }
+
+    private async Task DeleteAsync(Monitor monitor)
+    {
+        await MonitorRepo.DeleteAsync(monitor.MonitorId);
+        _monitors.Remove(monitor);
+        Snackbar.Add($"{monitor.Name} deleted.", Severity.Warning);
+    }
+}

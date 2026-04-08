@@ -1,0 +1,10 @@
+{
+  "TypeKey": "CPU",
+  "DisplayName": "CPU Monitor",
+  "Description": "Monitors CPU usage via Windows Performance Counters",
+  "Parameters": [
+    { "Name": "ComputerName", "Type": "string", "Default": "localhost", "Required": false, "Description": "Target computer name or IP (leave blank for local)" },
+    { "Name": "WarnThreshold", "Type": "decimal", "Default": 80, "Required": false, "Description": "Warning threshold (%)" },
+    { "Name": "FailThreshold", "Type": "decimal", "Default": 95, "Required": false, "Description": "Failure threshold (%)" }
+  ]
+}

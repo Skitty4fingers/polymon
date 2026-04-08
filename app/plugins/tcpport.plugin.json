@@ -1,0 +1,10 @@
+{
+  "TypeKey": "TCPPORT",
+  "DisplayName": "TCP Port Monitor",
+  "Description": "Checks if a TCP port is open and accepting connections",
+  "Parameters": [
+    { "Name": "HostName", "Type": "string", "Default": "", "Required": true, "Description": "Hostname or IP" },
+    { "Name": "Port", "Type": "int", "Default": 80, "Required": true, "Description": "TCP port number" },
+    { "Name": "TimeoutMs", "Type": "int", "Default": 3000, "Required": false, "Description": "Connection timeout (ms)" }
+  ]
+}

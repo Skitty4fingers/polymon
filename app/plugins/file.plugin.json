@@ -1,0 +1,12 @@
+{
+  "TypeKey": "FILE",
+  "DisplayName": "File Monitor",
+  "Description": "Monitors file age and/or count in a directory",
+  "Parameters": [
+    { "Name": "Path", "Type": "string", "Default": "", "Required": true, "Description": "File or directory path (supports wildcards e.g. C:\\logs\\*.log)" },
+    { "Name": "MonitorType", "Type": "string", "Default": "age", "Required": false, "Description": "age (check file age in minutes) or count (check file count)" },
+    { "Name": "WarnThreshold", "Type": "decimal", "Default": 60, "Required": false, "Description": "Warning threshold (minutes for age, count for count)" },
+    { "Name": "FailThreshold", "Type": "decimal", "Default": 120, "Required": false, "Description": "Failure threshold" },
+    { "Name": "ThresholdDirection", "Type": "string", "Default": "above", "Required": false, "Description": "above or below" }
+  ]
+}
