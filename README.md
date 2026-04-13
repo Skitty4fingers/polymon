@@ -4,9 +4,13 @@ Open-source infrastructure monitoring platform — modernized from the original 
 
 ---
 
-## What is PolyMon?
+## What is BlazorMon?
 
-PolyMon monitors infrastructure endpoints (servers, services, URLs, databases, network devices) on a configurable schedule, logs results to SQL Server, and sends email alerts when status changes. A real-time web dashboard shows the current state of all monitors.
+BlazorMon monitors infrastructure endpoints (servers, services, URLs, databases, network devices) on a configurable schedule, logs results to SQL Server, and sends email alerts when status changes. A real-time web dashboard shows the current state of all monitors.
+
+### Origin: PolyMon
+
+BlazorMon is a modern reincarnation of **PolyMon**, an open-source infrastructure monitoring tool originally created by Fred Baptiste circa 2005 and published on CodePlex. The original was built on .NET Framework 2.0 / VB.NET, shipped as a Windows Forms MDI desktop client backed by a Windows Service, and relied on libraries that have long since reached end-of-life (.NET Framework 2.0 EOL'd in 2014, ZedGraph last updated 2007). BlazorMon preserves the same monitoring concepts and SQL Server schema while replacing every layer of the stack: VB.NET → C#, Windows Forms → Blazor Server, Windows Service → `BackgroundService`, `System.Net.Mail` → MailKit, and compiled monitor types → hot-loadable PowerShell plugins.
 
 ---
 
@@ -67,7 +71,7 @@ Run `app/db/init.sql` against an empty SQL Server database:
 
 ```sql
 -- In SSMS or sqlcmd:
-USE PolyMon;
+USE BlazorMon;
 GO
 -- paste / execute init.sql
 ```
@@ -101,7 +105,7 @@ The app starts at `https://localhost:5001`. Log in with the default credentials 
 
 | Email | Password |
 |---|---|
-| `admin@blazormon.local` | `PolyMon1!` |
+| `admin@blazormon.local` | `BlazorMon1!` |
 
 > **Change this password immediately** via Admin → Users after first login.
 
@@ -216,5 +220,5 @@ dotnet watch --project app/src/BlazorMon.Web
 
 ## Original project
 
-PolyMon was originally created by Fred Baptiste and published on CodePlex.  
-The legacy archive: https://archive.codeplex.com/?p=polymon
+PolyMon was originally created by Fred Baptiste and published on CodePlex.
+The legacy archive is available at the CodePlex archive.
