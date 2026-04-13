@@ -14,10 +14,17 @@ namespace BlazorMon.Infrastructure;
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services,
-        string connectionString, string pluginsDirectory)
+        string? connectionString, string pluginsDirectory)
     {
+        var useSqlite = string.IsNullOrWhiteSpace(connectionString);
+
         services.AddDbContext<PolyMonDbContext>(opts =>
-            opts.UseSqlServer(connectionString));
+        {
+            if (useSqlite)
+                opts.UseSqlite("Data Source=blazormon.db");
+            else
+                opts.UseSqlServer(connectionString);
+        });
 
         // ASP.NET Core Identity
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>

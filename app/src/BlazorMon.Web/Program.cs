@@ -25,11 +25,15 @@ try
         .WriteTo.File("logs/polymon-.log", rollingInterval: RollingInterval.Day));
 
     // Infrastructure (EF Core, repositories, Identity, plugin scanner, email)
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+    // When no SQL Server connection string is configured the app falls back to
+    // a local SQLite database (blazormon.db) — useful for development / demo.
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     var pluginsDir = builder.Configuration["PluginsDirectory"]
         ?? Path.Combine(AppContext.BaseDirectory, "..", "..", "plugins");
     pluginsDir = Path.GetFullPath(pluginsDir);
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+        Log.Warning("No SQL Server connection string configured — using SQLite (blazormon.db)");
 
     builder.Services.AddInfrastructure(connectionString, pluginsDir);
 
@@ -56,6 +60,18 @@ try
     builder.Services.AddMudServices();
 
     var app = builder.Build();
+
+    // Ensure the database schema exists.
+    // For SQLite (no connection string configured) EnsureCreated() creates the
+    // file and all tables automatically on first run.
+    // For SQL Server the user is expected to run app/db/init.sql manually,
+    // so we only call EnsureCreated() when the provider is SQLite.
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<BlazorMon.Infrastructure.Data.PolyMonDbContext>();
+        if (db.Database.ProviderName?.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) == true)
+            await db.Database.EnsureCreatedAsync();
+    }
 
     // Seed a default admin user on first run
     await SeedAdminUserAsync(app.Services);
@@ -96,7 +112,7 @@ static async Task SeedAdminUserAsync(IServiceProvider services)
     var userManager = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<ApplicationUser>>();
 
     const string defaultEmail = "admin@blazormon.local";
-    const string defaultPassword = "PolyMon1!";
+    const string defaultPassword = "BlazorMon1!";
 
     if (await userManager.FindByEmailAsync(defaultEmail) is null)
     {

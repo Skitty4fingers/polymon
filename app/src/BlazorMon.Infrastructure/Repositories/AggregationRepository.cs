@@ -26,6 +26,13 @@ public class AggregationRepository(
 
     private async Task ExecuteIfExistsAsync(string spName, CancellationToken ct)
     {
+        // Aggregation stored procedures are SQL Server-only; skip on SQLite.
+        if (db.Database.ProviderName?.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            logger.LogDebug("SQLite provider — skipping stored procedure {StoredProcedure}", spName);
+            return;
+        }
+
         try
         {
             // Execute the SP only if it exists — graceful degradation on fresh schemas
