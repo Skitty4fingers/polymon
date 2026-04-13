@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PolyMon.Application.Interfaces;
 using PolyMon.Infrastructure.Data;
+using PolyMon.Infrastructure.Identity;
 using PolyMon.Infrastructure.Plugins;
 using PolyMon.Infrastructure.Repositories;
 using PolyMon.Infrastructure.Services;
@@ -17,12 +19,23 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<PolyMonDbContext>(opts =>
             opts.UseSqlServer(connectionString));
 
+        // ASP.NET Core Identity
+        services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+            {
+                options.SignIn.RequireConfirmedAccount = false;
+                options.Password.RequiredLength = 8;
+                options.Password.RequireNonAlphanumeric = false;
+            })
+            .AddEntityFrameworkStores<PolyMonDbContext>()
+            .AddDefaultTokenProviders();
+
         services.AddScoped<IMonitorRepository, MonitorRepository>();
         services.AddScoped<IMonitorTypeRepository, MonitorTypeRepository>();
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IOperatorRepository, OperatorRepository>();
         services.AddScoped<ISysSettingsRepository, SysSettingsRepository>();
         services.AddScoped<IDashboardRepository, DashboardRepository>();
+        services.AddScoped<IAggregationRepository, AggregationRepository>();
 
         services.AddSingleton<IPluginScanner>(sp =>
         {

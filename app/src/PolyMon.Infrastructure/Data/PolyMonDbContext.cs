@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PolyMon.Domain.Models;
+using PolyMon.Infrastructure.Identity;
 
 namespace PolyMon.Infrastructure.Data;
 
-public class PolyMonDbContext(DbContextOptions<PolyMonDbContext> options) : DbContext(options)
+public class PolyMonDbContext(DbContextOptions<PolyMonDbContext> options)
+    : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<MonitorDef> Monitors => Set<MonitorDef>();
     public DbSet<MonitorType> MonitorTypes => Set<MonitorType>();
@@ -18,7 +21,7 @@ public class PolyMonDbContext(DbContextOptions<PolyMonDbContext> options) : DbCo
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);  // Identity tables first
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PolyMonDbContext).Assembly);
-        base.OnModelCreating(modelBuilder);
     }
 }
