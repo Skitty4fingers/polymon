@@ -1,4 +1,4 @@
-# PolyMon
+# BlazorMon
 
 Open-source infrastructure monitoring platform — modernized from the original .NET Framework 2.0 / VB.NET codebase to **.NET 10** with a **Blazor Server** frontend.
 
@@ -45,10 +45,10 @@ app/
 ├── db/init.sql                  ← run once against an empty SQL Server database
 ├── plugins/                     ← PowerShell monitor plugins
 └── src/
-    ├── PolyMon.Domain/          ← models, enums, plugin contracts
-    ├── PolyMon.Application/     ← business logic, background services
-    ├── PolyMon.Infrastructure/  ← EF Core, Identity, repositories, email
-    └── PolyMon.Web/             ← Blazor Server UI entry point
+    ├── BlazorMon.Domain/          ← models, enums, plugin contracts
+    ├── BlazorMon.Application/     ← business logic, background services
+    ├── BlazorMon.Infrastructure/  ← EF Core, Identity, repositories, email
+    └── BlazorMon.Web/             ← Blazor Server UI entry point
 ```
 
 ---
@@ -74,12 +74,12 @@ GO
 
 ### 2 — Configure the connection string
 
-Edit `app/src/PolyMon.Web/appsettings.json`:
+Edit `app/src/BlazorMon.Web/appsettings.json`:
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Data Source=localhost;Initial Catalog=PolyMon;Integrated Security=SSPI;TrustServerCertificate=true"
+    "DefaultConnection": "Data Source=localhost;Initial Catalog=BlazorMon;Integrated Security=SSPI;TrustServerCertificate=true"
   }
 }
 ```
@@ -94,14 +94,14 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "..."
 
 ```bash
 cd app
-dotnet run --project src/PolyMon.Web
+dotnet run --project src/BlazorMon.Web
 ```
 
 The app starts at `https://localhost:5001`. Log in with the default credentials created on first startup:
 
 | Email | Password |
 |---|---|
-| `admin@polymon.local` | `PolyMon1!` |
+| `admin@blazormon.local` | `PolyMon1!` |
 
 > **Change this password immediately** via Admin → Users after first login.
 
@@ -112,8 +112,8 @@ The app starts at `https://localhost:5001`. Log in with the default credentials 
 The web host is pre-configured with `UseWindowsService()`. To install:
 
 ```powershell
-sc.exe create "PolyMon" binpath="C:\polymon\PolyMon.Web.exe" start=auto
-sc.exe start "PolyMon"
+sc.exe create "BlazorMon" binpath="C:\polymon\BlazorMon.Web.exe" start=auto
+sc.exe start "BlazorMon"
 ```
 
 ---
@@ -209,7 +209,7 @@ dotnet build app/
 dotnet test app/
 
 # Run in development (hot reload)
-dotnet watch --project app/src/PolyMon.Web
+dotnet watch --project app/src/BlazorMon.Web
 ```
 
 ---

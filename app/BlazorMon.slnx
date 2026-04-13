@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BlazorMon.Application/BlazorMon.Application.csproj" />
+    <Project Path="src/BlazorMon.Domain/BlazorMon.Domain.csproj" />
+    <Project Path="src/BlazorMon.Infrastructure/BlazorMon.Infrastructure.csproj" />
+    <Project Path="src/BlazorMon.Web/BlazorMon.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BlazorMon.Application.Tests/BlazorMon.Application.Tests.csproj" />
+    <Project Path="tests/BlazorMon.Domain.Tests/BlazorMon.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

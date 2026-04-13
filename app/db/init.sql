@@ -330,5 +330,5 @@ BEGIN
 END
 GO
 
-PRINT 'PolyMon schema initialization complete.';
+PRINT 'BlazorMon schema initialization complete.';
 GO
