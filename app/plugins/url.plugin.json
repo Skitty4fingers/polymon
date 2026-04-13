@@ -1,0 +1,13 @@
+{
+  "TypeKey": "URL",
+  "DisplayName": "URL Monitor",
+  "Description": "Checks HTTP/HTTPS URL availability and response time",
+  "Parameters": [
+    { "Name": "Url", "Type": "string", "Default": "", "Required": true, "Description": "URL to check (https://...)" },
+    { "Name": "ExpectedStatusCode", "Type": "int", "Default": 200, "Required": false, "Description": "Expected HTTP status code" },
+    { "Name": "ContainsText", "Type": "string", "Default": "", "Required": false, "Description": "Optional text that must appear in response body" },
+    { "Name": "WarnResponseMs", "Type": "decimal", "Default": 2000, "Required": false, "Description": "Warning if response time exceeds (ms)" },
+    { "Name": "FailResponseMs", "Type": "decimal", "Default": 5000, "Required": false, "Description": "Failure if response time exceeds (ms)" },
+    { "Name": "TimeoutMs", "Type": "int", "Default": 10000, "Required": false, "Description": "Request timeout (ms)" }
+  ]
+}

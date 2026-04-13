@@ -1,0 +1,58 @@
+@page "/alerts"
+@rendermode InteractiveServer
+@inject IEventRepository EventRepo
+
+<PageTitle>Alerts - PolyMon</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-4">Active Alerts</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_alerts.Count == 0)
+{
+    <MudAlert Severity="Severity.Success">No active alerts. All monitors are healthy.</MudAlert>
+}
+else
+{
+    <MudAlert Severity="Severity.Warning" Class="mb-3">@_alerts.Count active alert(s)</MudAlert>
+    <MudDataGrid T="MonitorEvent" Items="@_alerts" Dense="true" Hover="true">
+        <Columns>
+            <PropertyColumn Property="e => e.Monitor!.Name" Title="Monitor" />
+            <TemplateColumn Title="Status">
+                <CellTemplate>
+                    <StatusBadge Status="@context.Item.Status" />
+                </CellTemplate>
+            </TemplateColumn>
+            <PropertyColumn Property="e => e.Message" Title="Message" />
+            <TemplateColumn Title="Since">
+                <CellTemplate>@context.Item.EventDt.ToLocalTime().ToString("g")</CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+}
+
+@code {
+    private List<MonitorEvent> _alerts = [];
+    private bool _loading = true;
+    private System.Threading.Timer? _refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _loading = false;
+        _refreshTimer = new System.Threading.Timer(_ => InvokeAsync(async () =>
+        {
+            await LoadAsync();
+            StateHasChanged();
+        }), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    private async Task LoadAsync()
+    {
+        _alerts = await EventRepo.GetActiveAlertsAsync();
+    }
+
+    public void Dispose() => _refreshTimer?.Dispose();
+}

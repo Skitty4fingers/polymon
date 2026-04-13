@@ -1,0 +1,91 @@
+@using PolyMon.Domain.Plugins
+@using System.Xml.Linq
+
+@* Generic plugin config editor — renders form fields from PluginDescriptor.Parameters *@
+
+@if (Descriptor is not null)
+{
+    <MudGrid>
+        @foreach (var param in Descriptor.Parameters)
+        {
+            <MudItem xs="12" sm="6">
+                @if (param.Type == "bool")
+                {
+                    <MudCheckBox T="bool" Label="@param.Name"
+                                 Value="@GetBoolValue(param.Name)"
+                                 ValueChanged="@((v) => SetValue(param.Name, v.ToString()))"
+                                 HelperText="@param.Description" />
+                }
+                else if (param.Type == "decimal" || param.Type == "int")
+                {
+                    <MudNumericField T="decimal" Label="@param.Name"
+                                     Value="@GetDecimalValue(param.Name, param.Default)"
+                                     ValueChanged="@((v) => SetValue(param.Name, v.ToString()))"
+                                     HelperText="@param.Description" />
+                }
+                else
+                {
+                    <MudTextField T="string" Label="@param.Name"
+                                  Value="@GetStringValue(param.Name, param.Default)"
+                                  ValueChanged="@((v) => SetValue(param.Name, v))"
+                                  HelperText="@param.Description"
+                                  Required="@param.Required" />
+                }
+            </MudItem>
+        }
+    </MudGrid>
+}
+else
+{
+    <MudText Typo="Typo.body2" Class="mud-text-secondary">No plugin selected or plugin not found.</MudText>
+}
+
+@code {
+    [Parameter] public PluginDescriptor? Descriptor { get; set; }
+    [Parameter] public string ConfigXml { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ConfigXmlChanged { get; set; }
+
+    private Dictionary<string, string> _values = [];
+
+    protected override void OnParametersSet()
+    {
+        _values = ParseXml(ConfigXml);
+    }
+
+    private string GetStringValue(string name, object? defaultVal)
+        => _values.TryGetValue(name, out var v) ? v : defaultVal?.ToString() ?? string.Empty;
+
+    private decimal GetDecimalValue(string name, object? defaultVal)
+        => decimal.TryParse(GetStringValue(name, defaultVal), out var d) ? d : 0;
+
+    private bool GetBoolValue(string name)
+        => bool.TryParse(GetStringValue(name, "false"), out var b) && b;
+
+    private async Task SetValue(string name, string value)
+    {
+        _values[name] = value;
+        var xml = BuildXml(_values);
+        ConfigXml = xml;
+        await ConfigXmlChanged.InvokeAsync(xml);
+    }
+
+    private static Dictionary<string, string> ParseXml(string xml)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(xml)) return result;
+        try
+        {
+            var doc = XDocument.Parse(xml);
+            foreach (var el in doc.Root?.Elements() ?? [])
+                result[el.Name.LocalName] = el.Value;
+        }
+        catch { }
+        return result;
+    }
+
+    private static string BuildXml(Dictionary<string, string> values)
+    {
+        var root = new XElement("Config", values.Select(kv => new XElement(kv.Key, kv.Value)));
+        return root.ToString();
+    }
+}

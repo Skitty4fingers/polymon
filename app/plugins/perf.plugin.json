@@ -1,0 +1,12 @@
+{
+  "TypeKey": "PERF",
+  "DisplayName": "Performance Counter Monitor",
+  "Description": "Monitors any Windows Performance Counter value",
+  "Parameters": [
+    { "Name": "CounterPath", "Type": "string", "Default": "", "Required": true, "Description": "Performance counter path (e.g. \\Processor(_Total)\\% Processor Time)" },
+    { "Name": "ComputerName", "Type": "string", "Default": "localhost", "Required": false, "Description": "Target computer" },
+    { "Name": "WarnThreshold", "Type": "decimal", "Default": 0, "Required": false, "Description": "Warning if value exceeds (0=disabled)" },
+    { "Name": "FailThreshold", "Type": "decimal", "Default": 0, "Required": false, "Description": "Failure if value exceeds (0=disabled)" },
+    { "Name": "ThresholdDirection", "Type": "string", "Default": "above", "Required": false, "Description": "above or below" }
+  ]
+}

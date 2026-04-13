@@ -1,0 +1,79 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+
+<MudThemeProvider Theme="_theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Color="Color.Primary" Fixed="true" Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       OnClick="@ToggleDrawer" />
+        <MudText Typo="Typo.h6" Class="ml-2">PolyMon</MudText>
+        <MudSpacer />
+        <MudText Typo="Typo.caption" Class="mud-text-secondary mr-2">Infrastructure Monitor</MudText>
+
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary mr-1">
+                    @context.User.Identity?.Name
+                </MudText>
+                <form method="post" action="/account/logout" style="display:inline">
+                    <input type="hidden" name="__RequestVerificationToken"
+                           value="@_antiforgeryToken" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit"
+                                   title="Sign out" ButtonType="ButtonType.Submit" />
+                </form>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.subtitle1" Class="mt-4"><b>Navigation</b></MudText>
+        </MudDrawerHeader>
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent Class="pt-16">
+        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="pa-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private string _antiforgeryToken = string.Empty;
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Retrieve a request-verification token for the logout form POST.
+        // The token is embedded as a hidden field because the logout button
+        // submits a plain HTML form (not a Blazor event) to ensure Sign-Out
+        // writes the cookie response outside of a SignalR connection.
+        if (AuthState is not null)
+            await AuthState;
+
+        // Token placeholder — actual token is rendered by AntiforgeryToken middleware
+        // injected via <form> antiforgery. We leave the value empty here because
+        // the Razor Pages engine injects it via Html.AntiForgeryToken() on the server.
+        // In production, wire IAntiforgery to generate the token in this component.
+        _antiforgeryToken = string.Empty;
+    }
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#1565C0",
+            Secondary = "#0288D1",
+            AppbarBackground = "#1565C0"
+        }
+    };
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+}

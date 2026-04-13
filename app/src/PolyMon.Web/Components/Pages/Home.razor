@@ -1,0 +1,96 @@
+@page "/"
+@rendermode InteractiveServer
+@inject IMonitorRepository MonitorRepo
+@inject IEventRepository EventRepo
+
+<PageTitle>Dashboard - PolyMon</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-4">Dashboard</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_groups.Count == 0 && _monitors.Count > 0)
+{
+    <MudText Typo="Typo.subtitle1" Class="mb-3">All Monitors</MudText>
+    <MudGrid>
+        @foreach (var monitor in _monitors)
+        {
+            <MudItem xs="12" sm="6" md="4" lg="3">
+                <MonitorTile Monitor="@monitor"
+                             LastStatus="@GetStatus(monitor.MonitorId)"
+                             LastMessage="@GetMessage(monitor.MonitorId)"
+                             LastEventDt="@GetEventDt(monitor.MonitorId)" />
+            </MudItem>
+        }
+    </MudGrid>
+}
+else if (_monitors.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">No monitors configured. <MudLink Href="/admin/monitors">Add a monitor</MudLink> to get started.</MudAlert>
+}
+else
+{
+    @foreach (var group in _groups)
+    {
+        <MudText Typo="Typo.subtitle1" Class="mb-2 mt-4">@group.Name</MudText>
+        <MudGrid Class="mb-2">
+            @foreach (var gm in group.GroupMonitors.OrderBy(g => g.DisplayOrder))
+            {
+                var monitor = gm.Monitor;
+                if (monitor is null) continue;
+                <MudItem xs="12" sm="6" md="4" lg="3">
+                    <MonitorTile Monitor="@monitor"
+                                 LastStatus="@GetStatus(monitor.MonitorId)"
+                                 LastMessage="@GetMessage(monitor.MonitorId)"
+                                 LastEventDt="@GetEventDt(monitor.MonitorId)" />
+                </MudItem>
+            }
+        </MudGrid>
+    }
+}
+
+@code {
+    private List<Monitor> _monitors = [];
+    private List<DashboardGroup> _groups = [];
+    private Dictionary<int, MonitorEvent> _lastEvents = [];
+    private bool _loading = true;
+    private System.Threading.Timer? _refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+        _loading = false;
+        _refreshTimer = new System.Threading.Timer(_ => InvokeAsync(RefreshAsync), null,
+            TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _monitors = await MonitorRepo.GetAllAsync();
+        _lastEvents = [];
+        foreach (var m in _monitors)
+        {
+            var evt = await EventRepo.GetLastEventAsync(m.MonitorId);
+            if (evt is not null) _lastEvents[m.MonitorId] = evt;
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        await LoadDataAsync();
+        StateHasChanged();
+    }
+
+    private MonitorStatus GetStatus(int monitorId)
+        => _lastEvents.TryGetValue(monitorId, out var e) ? e.Status : MonitorStatus.Ok;
+
+    private string? GetMessage(int monitorId)
+        => _lastEvents.TryGetValue(monitorId, out var e) ? e.Message : null;
+
+    private DateTime? GetEventDt(int monitorId)
+        => _lastEvents.TryGetValue(monitorId, out var e) ? e.EventDt : null;
+
+    public void Dispose() => _refreshTimer?.Dispose();
+}

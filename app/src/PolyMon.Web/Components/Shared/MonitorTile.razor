@@ -1,0 +1,36 @@
+@* Dashboard tile showing a single monitor's current status *@
+
+<MudCard Elevation="2" Style="@GetBorderStyle()">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.subtitle1">@Monitor.Name</MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">@(Monitor.MonitorType?.Name ?? "Unknown")</MudText>
+        </CardHeaderContent>
+        <CardHeaderActions>
+            <StatusBadge Status="@LastStatus" />
+        </CardHeaderActions>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">@(LastMessage ?? "No data yet")</MudText>
+        @if (LastEventDt.HasValue)
+        {
+            <MudText Typo="Typo.caption" Class="mud-text-secondary mt-1">
+                @LastEventDt.Value.ToLocalTime().ToString("g")
+            </MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter, EditorRequired] public Monitor Monitor { get; set; } = null!;
+    [Parameter] public MonitorStatus LastStatus { get; set; } = MonitorStatus.Ok;
+    [Parameter] public string? LastMessage { get; set; }
+    [Parameter] public DateTime? LastEventDt { get; set; }
+
+    private string GetBorderStyle() => LastStatus switch
+    {
+        MonitorStatus.Fail => "border-left: 4px solid #f44336;",
+        MonitorStatus.Warning => "border-left: 4px solid #ff9800;",
+        _ => "border-left: 4px solid #4caf50;"
+    };
+}

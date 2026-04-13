@@ -1,0 +1,9 @@
+{
+  "TypeKey": "POWERSHELL",
+  "DisplayName": "PowerShell Monitor",
+  "Description": "Runs a custom inline PowerShell script. Script must output an object with Status (1/2/3), Message (string), and Counters (hashtable).",
+  "Parameters": [
+    { "Name": "Script", "Type": "string", "Default": "", "Required": true, "Description": "PowerShell script to execute. Must return object with Status, Message, Counters." },
+    { "Name": "TimeoutSeconds", "Type": "int", "Default": 30, "Required": false, "Description": "Script execution timeout (seconds)" }
+  ]
+}

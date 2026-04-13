@@ -1,0 +1,108 @@
+@page "/reports"
+@rendermode InteractiveServer
+@inject IEventRepository EventRepo
+@inject IMonitorRepository MonitorRepo
+
+<PageTitle>Reports - PolyMon</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-4">Reports</MudText>
+
+<MudPaper Class="pa-4 mb-4" Elevation="1">
+    <MudGrid>
+        <MudItem xs="12" sm="4">
+            <MudSelect T="int?" Label="Monitor" @bind-Value="_selectedMonitorId">
+                @foreach (var m in _monitors)
+                {
+                    <MudSelectItem T="int?" Value="@((int?)m.MonitorId)">@m.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="3">
+            <MudDatePicker Label="From" @bind-Date="_from" />
+        </MudItem>
+        <MudItem xs="12" sm="3">
+            <MudDatePicker Label="To" @bind-Date="_to" />
+        </MudItem>
+        <MudItem xs="12" sm="2" Class="d-flex align-end">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LoadAsync">Load</MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_chartData.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">No data found for the selected range.</MudAlert>
+}
+else
+{
+    <MudText Typo="Typo.subtitle1" Class="mb-2">Status Over Time</MudText>
+    <MudPaper Class="pa-4" Elevation="1">
+        <MudChart ChartType="ChartType.Line"
+                  ChartSeries="@_chartSeries"
+                  XAxisLabels="@_xLabels"
+                  Height="350px" />
+    </MudPaper>
+
+    <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Recent Events</MudText>
+    <MudDataGrid T="MonitorEvent" Items="@_chartData" Dense="true" Hover="true">
+        <Columns>
+            <TemplateColumn Title="Time">
+                <CellTemplate>@context.Item.EventDt.ToLocalTime().ToString("g")</CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Status">
+                <CellTemplate><StatusBadge Status="@context.Item.Status" /></CellTemplate>
+            </TemplateColumn>
+            <PropertyColumn Property="e => e.Message" Title="Message" />
+        </Columns>
+    </MudDataGrid>
+}
+
+@code {
+    private List<Monitor> _monitors = [];
+    private int? _selectedMonitorId;
+    private DateTime? _from = DateTime.Today.AddDays(-30);
+    private DateTime? _to = DateTime.Today.AddDays(1);
+    private bool _loading = false;
+    private List<MonitorEvent> _chartData = [];
+    private List<ChartSeries<double>> _chartSeries = [];
+    private string[] _xLabels = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _monitors = await MonitorRepo.GetAllAsync();
+        if (_monitors.Count > 0)
+        {
+            _selectedMonitorId = _monitors[0].MonitorId;
+            await LoadAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        if (_selectedMonitorId is null) return;
+        _loading = true;
+
+        var from = _from?.ToUniversalTime() ?? DateTime.UtcNow.AddDays(-30);
+        var to = _to?.ToUniversalTime() ?? DateTime.UtcNow.AddDays(1);
+        _chartData = await EventRepo.GetHistoryAsync(from, to, _selectedMonitorId);
+
+        // Build chart: status value (1=OK,2=Warn,3=Fail) over time
+        _xLabels = _chartData.TakeLast(50)
+            .Select(e => e.EventDt.ToLocalTime().ToString("M/d HH:mm"))
+            .ToArray();
+        _chartSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Status",
+                Data = _chartData.TakeLast(50).Select(e => (double)e.StatusId).ToArray()
+            }
+        ];
+
+        _loading = false;
+    }
+}

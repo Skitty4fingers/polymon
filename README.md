@@ -1,39 +1,220 @@
-# Polymon
+# PolyMon
 
-[-- this project is inactive --]
+Open-source infrastructure monitoring platform — modernized from the original .NET Framework 2.0 / VB.NET codebase to **.NET 10** with a **Blazor Server** frontend.
 
-I originally created Polymon as open source in CodePlex.
-The original archive can still be found here: https://archive.codeplex.com/?p=polymon
+---
 
-### What is PolyMon?
-PolyMon is an open source system monitoring solution that can be used to generate email alerts and analyze historical trends of monitor counters and monitor statuses. It is based on the .NET 2.0 framework and SQL Server 2005.
+## What is PolyMon?
 
-It is simple to use and run but flexible enough for many circumstances.
+PolyMon monitors infrastructure endpoints (servers, services, URLs, databases, network devices) on a configurable schedule, logs results to SQL Server, and sends email alerts when status changes. A real-time web dashboard shows the current state of all monitors.
 
-It is made up of three primary components:
-* A SQL Server database to store monitor statuses, alerts and general settings.
-* A windows service (PolyMon Executive) that runs monitors on a periodic basis, logs results to the database and sends out email notifications.
-* A management/monitoring front-end (PolyMon Manager) that is used to manage general settings, monitor definitions, operators, alert rules, etc. and analyze historical trends (both monitor counters and statuses).
+---
 
-#### Current monitor plug-ins:
-- CPU Monitor
-- Disk Monitor
-- File (Age and Counts)
-- Windows Performance Counters Monitor (built-in Performance Counter browser)
-- Ping
-- PowerShell Scripting
-- SQL Monitor (Can run any stored procedure that returns resultsets in a specific format)
-- SNMP Monitor
-- TCP Port Monitor
-- URL (HTML) Monitor
-- URL (XML) Monitor
-- Windows Service Monitor
-- WMI Monitor (built-in WMI browser and query builder)
+## Architecture
 
-Monitors are built using a plug-in architecture and can be added to PolyMon without requiring a recompile of the application. New plug-ins simply need to inherit from a base class. Once compiled and placed in the appropriate directories, new monitors are registered with PolyMon using a plug-in registration form in PolyMon Manager.
+| Layer | Technology |
+|---|---|
+| Frontend | Blazor Server (.NET 10) + MudBlazor 9 |
+| Monitoring engine | `BackgroundService` (replaces the Windows Service) |
+| Data access | EF Core 10 + SQL Server |
+| Plugins | PowerShell scripts (`.ps1` + `.plugin.json`) |
+| Email | MailKit 4 |
+| Authentication | ASP.NET Core Identity |
+| Logging | Serilog |
 
-In addition, users can create completely custom monitors by using PowerShell scripts. PolyMon now integrates PowerShell scripting allowing Status and Counter information to be passed back from a PowerShell script to the PolyMon PowerShell Monitor. This essentially provides PolyMon a complete integrated scripting language for custom monitoring. Furthermore, because these monitors are created using PowerShell you have full control over what actions to take in the event of a Warning or Failure state.
+### Plugin system
 
-Post-Event scripting via PowerShell or VBScript is also possible, allowing you to take actions based on the status or counter values of any monitor, not just PowerShell based monitors.
+Each monitor type is a pair of files in `app/plugins/`:
 
-In addition, you can interface to the PolyMon system via PowerShell using Steve's PoshMon PowerShell snap-in. The snap-in is available through the downloads area, but I recommend you check out this site also: http://powershell-basics.com/category/poshmon/.
+```
+plugins/
+├── cpu.ps1              # monitor logic
+├── cpu.plugin.json      # parameter schema + metadata
+├── disk.ps1 / disk.plugin.json
+└── ...
+```
+
+Plugins are scanned at startup. Adding, removing, or modifying a plugin **does not require recompiling the application** — place the two files in `plugins/` and restart.
+
+**Available plugins:** cpu · disk · ping · service · tcpport · url · urlxml · perf · wmi · sql · snmp · file · powershell
+
+### Solution structure
+
+```
+app/
+├── db/init.sql                  ← run once against an empty SQL Server database
+├── plugins/                     ← PowerShell monitor plugins
+└── src/
+    ├── PolyMon.Domain/          ← models, enums, plugin contracts
+    ├── PolyMon.Application/     ← business logic, background services
+    ├── PolyMon.Infrastructure/  ← EF Core, Identity, repositories, email
+    └── PolyMon.Web/             ← Blazor Server UI entry point
+```
+
+---
+
+## Getting started
+
+### Prerequisites
+
+- .NET 10 SDK
+- SQL Server 2019+ (or Azure SQL)
+- Windows (required for WMI, Performance Counter, and Windows Service plugins)
+
+### 1 — Create the database
+
+Run `app/db/init.sql` against an empty SQL Server database:
+
+```sql
+-- In SSMS or sqlcmd:
+USE PolyMon;
+GO
+-- paste / execute init.sql
+```
+
+### 2 — Configure the connection string
+
+Edit `app/src/PolyMon.Web/appsettings.json`:
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=localhost;Initial Catalog=PolyMon;Integrated Security=SSPI;TrustServerCertificate=true"
+  }
+}
+```
+
+For secrets management in production, use `dotnet user-secrets` or environment variables:
+
+```bash
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "..."
+```
+
+### 3 — Run
+
+```bash
+cd app
+dotnet run --project src/PolyMon.Web
+```
+
+The app starts at `https://localhost:5001`. Log in with the default credentials created on first startup:
+
+| Email | Password |
+|---|---|
+| `admin@polymon.local` | `PolyMon1!` |
+
+> **Change this password immediately** via Admin → Users after first login.
+
+---
+
+## Deploying as a Windows Service
+
+The web host is pre-configured with `UseWindowsService()`. To install:
+
+```powershell
+sc.exe create "PolyMon" binpath="C:\polymon\PolyMon.Web.exe" start=auto
+sc.exe start "PolyMon"
+```
+
+---
+
+## Background services
+
+| Service | Purpose |
+|---|---|
+| `MonitorExecutiveService` | Main polling loop — runs all enabled monitors on the configured interval |
+| `SummaryNotificationService` | Sends daily digest emails to operators with `SummaryNotify = true` |
+| `AggregationService` | Calls `agg_UpdateStatusTables`, `agg_UpdateCounterTables` every hour and `agg_ApplyRetentionScheme` every 24 h |
+
+The aggregation stored procedures are optional — they are skipped gracefully if not present in the database (fresh installs). Existing deployments upgrading from PolyMon 1.x that already have the `agg_*` procedures installed will benefit automatically.
+
+---
+
+## Writing a custom plugin
+
+Create two files in `app/plugins/`:
+
+**`myplugin.plugin.json`**
+
+```json
+{
+  "TypeKey": "MyPlugin",
+  "DisplayName": "My Custom Monitor",
+  "Description": "Does something useful",
+  "Parameters": [
+    { "Name": "Target",        "Type": "string",  "Default": "localhost", "Required": true },
+    { "Name": "WarnThreshold", "Type": "decimal", "Default": 80 },
+    { "Name": "FailThreshold", "Type": "decimal", "Default": 95 }
+  ]
+}
+```
+
+**`myplugin.ps1`**
+
+```powershell
+param([hashtable]$Config = @{})
+
+$target = $Config.Target ?? "localhost"
+$warn   = [decimal]($Config.WarnThreshold ?? 80)
+$fail   = [decimal]($Config.FailThreshold ?? 95)
+
+# ... your monitoring logic ...
+$value = 42.0
+
+$status = if ($value -ge $fail) { 3 } elseif ($value -ge $warn) { 2 } else { 1 }
+
+[PSCustomObject]@{
+    Status   = $status          # 1=OK  2=Warning  3=Fail
+    Message  = "Value: $value"
+    Counters = @{ "MyMetric" = $value }
+}
+```
+
+Restart the app and the plugin appears in Admin → Monitor Types, ready to use.
+
+---
+
+## Admin pages
+
+| Page | Path |
+|---|---|
+| Dashboard | `/` |
+| Current status | `/status/current` |
+| Active alerts | `/status/alerts` |
+| Event log | `/status/events` |
+| Reports | `/reports` |
+| Monitors | `/admin/monitors` |
+| Monitor types (plugins) | `/admin/monitor-types` |
+| Operators | `/admin/operators` |
+| Settings (SMTP, timer) | `/admin/settings` |
+
+---
+
+## Security
+
+- **Authentication**: ASP.NET Core Identity with cookie sessions. All pages require login.
+- **XXE**: The `urlxml` plugin parses XML with `DtdProcessing = DtdProcessing.Prohibit` — external entity injection is blocked.
+- **SMTP credentials**: Stored in `SysSettings` (database). Use environment variables or `dotnet user-secrets` to avoid hardcoding connection strings.
+- **Password policy**: Minimum 8 characters. Account lockout enabled after failed attempts.
+
+---
+
+## Development
+
+```bash
+# Build
+dotnet build app/
+
+# Test (32 unit tests)
+dotnet test app/
+
+# Run in development (hot reload)
+dotnet watch --project app/src/PolyMon.Web
+```
+
+---
+
+## Original project
+
+PolyMon was originally created by Fred Baptiste and published on CodePlex.  
+The legacy archive: https://archive.codeplex.com/?p=polymon

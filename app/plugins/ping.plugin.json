@@ -1,0 +1,12 @@
+{
+  "TypeKey": "PING",
+  "DisplayName": "Ping Monitor",
+  "Description": "Checks network connectivity via ICMP ping",
+  "Parameters": [
+    { "Name": "HostName", "Type": "string", "Default": "", "Required": true, "Description": "Hostname or IP to ping" },
+    { "Name": "PingCount", "Type": "int", "Default": 4, "Required": false, "Description": "Number of ping requests" },
+    { "Name": "TimeoutMs", "Type": "int", "Default": 1000, "Required": false, "Description": "Timeout per ping (ms)" },
+    { "Name": "WarnRttMs", "Type": "decimal", "Default": 100, "Required": false, "Description": "Warning if avg RTT exceeds this (ms)" },
+    { "Name": "FailPacketLossPct", "Type": "decimal", "Default": 50, "Required": false, "Description": "Failure if packet loss exceeds this %" }
+  ]
+}

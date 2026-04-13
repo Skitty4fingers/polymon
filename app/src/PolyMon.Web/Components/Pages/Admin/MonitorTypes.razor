@@ -1,0 +1,99 @@
+@page "/admin/monitor-types"
+@rendermode InteractiveServer
+@inject IMonitorTypeRepository MonitorTypeRepo
+@inject IPluginScanner PluginScanner
+@inject ISnackbar Snackbar
+
+<PageTitle>Monitor Types - PolyMon</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-4">Monitor Types (Plugins)</MudText>
+
+<MudAlert Severity="Severity.Info" Class="mb-4">
+    Plugin files are loaded from the <code>plugins/</code> directory.
+    Add a <code>.ps1</code> + <code>.plugin.json</code> pair and click <strong>Reload Plugins</strong>.
+</MudAlert>
+
+<MudStack Row="true" Class="mb-4" Spacing="2">
+    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh"
+               OnClick="ReloadPlugins">Reload Plugins</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Sync"
+               OnClick="SyncPluginsAsync">Sync to Database</MudButton>
+</MudStack>
+
+<MudText Typo="Typo.subtitle1" Class="mb-2">Loaded Plugins (@PluginScanner.Descriptors.Count)</MudText>
+<MudDataGrid T="PolyMon.Domain.Plugins.PluginDescriptor" Items="@PluginScanner.Descriptors" Dense="true">
+    <Columns>
+        <PropertyColumn Property="d => d.TypeKey" Title="Key" />
+        <PropertyColumn Property="d => d.DisplayName" Title="Name" />
+        <PropertyColumn Property="d => d.Description" Title="Description" />
+        <TemplateColumn Title="Parameters">
+            <CellTemplate>@context.Item.Parameters.Count param(s)</CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="Script">
+            <CellTemplate>
+                <MudText Typo="Typo.caption">@Path.GetFileName(context.Item.ScriptPath)</MudText>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</MudDataGrid>
+
+<MudDivider Class="my-4" />
+
+<MudText Typo="Typo.subtitle1" Class="mb-2">Database Monitor Types</MudText>
+<MudDataGrid T="MonitorType" Items="@_dbTypes" Dense="true">
+    <Columns>
+        <PropertyColumn Property="mt => mt.TypeKey" Title="Key" />
+        <PropertyColumn Property="mt => mt.Name" Title="Name" />
+        <PropertyColumn Property="mt => mt.Description" Title="Description" />
+        <TemplateColumn Title="Enabled">
+            <CellTemplate>
+                <MudSwitch T="bool" Value="@context.Item.IsEnabled"
+                           ValueChanged="@((v) => ToggleEnabledAsync(context.Item, v))"
+                           Color="Color.Success" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</MudDataGrid>
+
+@code {
+    private List<MonitorType> _dbTypes = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _dbTypes = await MonitorTypeRepo.GetAllAsync();
+    }
+
+    private void ReloadPlugins()
+    {
+        PluginScanner.Reload();
+        Snackbar.Add($"Loaded {PluginScanner.Descriptors.Count} plugins.", Severity.Info);
+    }
+
+    private async Task SyncPluginsAsync()
+    {
+        foreach (var descriptor in PluginScanner.Descriptors)
+        {
+            var existing = _dbTypes.FirstOrDefault(mt => mt.TypeKey == descriptor.TypeKey);
+            if (existing is null)
+            {
+                var newType = new MonitorType
+                {
+                    TypeKey = descriptor.TypeKey,
+                    Name = descriptor.DisplayName,
+                    Description = descriptor.Description,
+                    IsEnabled = true
+                };
+                await MonitorTypeRepo.AddAsync(newType);
+                _dbTypes.Add(newType);
+            }
+        }
+        Snackbar.Add("Plugin sync complete.", Severity.Success);
+    }
+
+    private async Task ToggleEnabledAsync(MonitorType mt, bool enabled)
+    {
+        mt.IsEnabled = enabled;
+        await MonitorTypeRepo.UpdateAsync(mt);
+    }
+}
